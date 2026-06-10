@@ -178,7 +178,10 @@
             <button onclick="cancelEdit()" style="width: 100%; background: transparent; color: var(--text); border: 1px solid var(--border);">Cancel</button>
         </div>
 
-        <button id="editBtn" onclick="toggleEditMode()" style="width: 100%; margin-top: 20px;">Edit Word</button>
+        <div id="actionBtns" style="display: flex; gap: 10px; margin-top: 20px;">
+            <button onclick="toggleEditMode()" style="flex: 1;">Edit Word</button>
+            <button onclick="deleteWord()" style="flex: 1; background: transparent; color: #ef4444; border: 1px solid #ef4444;">Delete Word</button>
+        </div>
     </div>
 </div>
 
