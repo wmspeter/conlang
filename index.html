@@ -5,158 +5,403 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Logograph Conlang Workspace</title>
     <style>
-        :root { --primary: #2c3e50; --bg: #ecf0f1; --canvas-bg: #ffffff; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--primary); margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; display: grid; gap: 20px; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        canvas { border: 2px solid #bdc3c7; border-radius: 4px; background: var(--canvas-bg); cursor: crosshair; touch-action: none; }
-        .controls { margin-top: 10px; display: flex; gap: 10px; }
-        input, textarea, button { padding: 10px; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 16px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
-        button { background: var(--primary); color: white; cursor: pointer; border: none; font-weight: bold; }
-        button:hover { background: #34495e; }
-        .search-results { margin-top: 20px; display: grid; gap: 10px; }
-        .result-item { display: flex; align-items: center; gap: 15px; padding: 10px; border: 1px solid #eee; border-radius: 4px; }
-        .result-item img { max-width: 60px; max-height: 60px; border: 1px solid #ccc; }
+        :root { 
+            --bg: #ecf0f1; 
+            --card-bg: #ffffff; 
+            --text: #2c3e50; 
+            --primary: #2c3e50; 
+            --border: #bdc3c7;
+            --canvas-bg: #ffffff; 
+        }
+        
+        /* Dark Mode: #0A192F */
+        [data-theme="dark"] {
+            --bg: #0A192F; --card-bg: #112240; --text: #ccd6f6; --primary: #64ffda; --border: #233554;
+        }
+        
+        /* Darker Mode: #111827 */
+        [data-theme="darker"] {
+            --bg: #111827; --card-bg: #1f2937; --text: #f3f4f6; --primary: #10b981; --border: #374151;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; transition: all 0.3s; }
+        
+        /* Navigation & Sidebar */
+        .top-bar { padding: 15px 20px; display: flex; align-items: center; gap: 15px; background: var(--card-bg); border-bottom: 1px solid var(--border); }
+        .menu-btn { background: none; border: none; color: var(--text); font-size: 24px; cursor: pointer; padding: 0; }
+        #sidebar { position: fixed; top: 0; left: -250px; width: 250px; height: 100vh; background: var(--card-bg); border-right: 1px solid var(--border); transition: left 0.3s; z-index: 1000; display: flex; flex-direction: column; }
+        #sidebar.open { left: 0; }
+        .sidebar-header { padding: 20px; font-weight: bold; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between;}
+        .sidebar-nav { flex-grow: 1; padding: 20px 0; }
+        .sidebar-link { display: block; padding: 15px 20px; color: var(--text); text-decoration: none; cursor: pointer; }
+        .sidebar-link:hover { background: var(--border); opacity: 0.8; }
+        .theme-toggle-container { padding: 20px; border-top: 1px solid var(--border); }
+
+        /* Main Containers */
+        .container { max-width: 800px; margin: 20px auto; display: grid; gap: 20px; padding: 0 20px; }
+        .card { background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border); }
+        .view-section { display: none; }
+        .view-section.active { display: grid; }
+
+        /* Forms & Canvas */
+        canvas { border: 2px solid var(--border); border-radius: 4px; background: var(--canvas-bg); cursor: crosshair; touch-action: none; }
+        input, textarea, select, button { padding: 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 16px; box-sizing: border-box; background: var(--card-bg); color: var(--text); }
+        input:focus, textarea:focus { outline: 1px solid var(--primary); }
+        button { background: var(--primary); color: var(--bg); cursor: pointer; border: none; font-weight: bold; transition: opacity 0.2s; }
+        button:hover { opacity: 0.8; }
+        .search-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .search-row input[type="number"] { width: 80px; }
+        .search-row input[type="text"] { flex-grow: 1; }
+
+        /* Tags system */
+        .tag-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+        .tag { background: var(--border); padding: 4px 10px; border-radius: 12px; font-size: 0.85em; display: flex; align-items: center; gap: 5px; }
+        .tag button { background: none; color: var(--text); padding: 0; font-size: 14px; width: 16px; height: 16px; line-height: 16px; }
+
+        /* Results & Dictionary */
+        .result-item { display: flex; align-items: center; gap: 15px; padding: 10px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; transition: transform 0.1s; margin-bottom: 10px;}
+        .result-item:hover { transform: translateY(-2px); border-color: var(--primary); }
+        .result-item img { width: 60px; height: 60px; border: 1px solid var(--border); object-fit: contain; background: white;}
+        .result-text { flex-grow: 1; overflow: hidden; }
+        .trunc-desc { 
+            font-size: 0.9em; color: inherit; opacity: 0.8;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; 
+        }
+        
+        .dict-header { margin: 20px 0 10px 0; border-bottom: 2px solid var(--primary); padding-bottom: 5px; text-transform: uppercase;}
+        .controls-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+        .modal-content { background: var(--card-bg); width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; border-radius: 8px; padding: 20px; position: relative; }
+        .close-btn { position: absolute; top: 15px; right: 20px; cursor: pointer; font-size: 24px; font-weight: bold; background: none; color: var(--text); border: none; }
+        .modal-img-container { text-align: center; margin: 20px 0; }
+        .modal-img-container img { max-width: 200px; border: 2px solid var(--border); background: white;}
     </style>
 </head>
 <body>
 
-<div class="container">
+<div class="top-bar">
+    <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+    <h2 style="margin:0; font-size: 1.2em;">Conlang Workspace</h2>
+</div>
+
+<div id="sidebar">
+    <div class="sidebar-header">
+        Menu <button class="menu-btn" onclick="toggleSidebar()">✕</button>
+    </div>
+    <div class="sidebar-nav">
+        <a class="sidebar-link" onclick="switchView('view-save-search')">Save and Search</a>
+        <a class="sidebar-link" onclick="switchView('view-all-words')">View All Words</a>
+    </div>
+    <div class="theme-toggle-container">
+        <button id="themeBtn" style="width: 100%;" onclick="cycleTheme()">Dark Mode</button>
+    </div>
+</div>
+
+<div class="container view-section active" id="view-save-search">
     <div class="card">
         <h2>Add New Logograph</h2>
         <canvas id="sketchpad" width="200" height="200"></canvas>
-        <div class="controls">
-            <button onclick="clearCanvas()">Clear Canvas</button>
+        <div style="margin: 10px 0;">
+            <button onclick="clearCanvas()">Clear</button>
         </div>
         
         <input type="text" id="soundInput" placeholder="Pronunciation / Sound (e.g., 'Ki')">
-        <textarea id="meaningInput" placeholder="Meaning / Semantic Definition (e.g., 'Tree object, uses classifier Bi')" rows="3"></textarea>
+        <textarea id="meaningInput" placeholder="Meaning / Semantic Definition" rows="3"></textarea>
         
-        <button onclick="saveLogograph()">Save to Lexicon</button>
+        <div class="search-row">
+            <input type="text" id="tagInput" placeholder="New tag (e.g., Noun)">
+            <button onclick="addTagUI()" style="width: auto;">Add Tag</button>
+        </div>
+        <div id="tagDisplay" class="tag-container"></div>
+        
+        <button style="width: 100%; margin-top: 10px;" onclick="saveLogograph()">Save to Lexicon</button>
     </div>
 
     <div class="card">
         <h2>Semantic Search</h2>
-        <input type="text" id="searchInput" placeholder="Search by concept (e.g., 'woody plants in a jungle')">
-        <button onclick="performSearch()">Search</button>
+        <div class="search-row">
+            <input type="number" id="limitInput" value="10" min="1" max="50" title="Results limit">
+            <input type="text" id="searchInput" placeholder="Search by concept...">
+            <button onclick="performSearch()" style="width: auto;">Search</button>
+        </div>
+        <div id="resultsContainer"></div>
+    </div>
+</div>
+
+<div class="container view-section" id="view-all-words">
+    <div class="card">
+        <h2>Dictionary</h2>
+        <div class="controls-row">
+            <button onclick="loadDictionary('az')">A-Z</button>
+            <button onclick="loadDictionary('date-new')">Latest</button>
+            <button onclick="loadDictionary('date-old')">Oldest</button>
+            <button onclick="loadDictionary('za')">Z-A</button>
+        </div>
+        <div id="dictionaryContainer"></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="wordModal">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeModal()">✕</button>
+        <div class="modal-img-container">
+            <img id="modalImg" src="">
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 id="modalSound" style="margin:0;"></h2>
+            <small id="modalDate" style="opacity: 0.6;"></small>
+        </div>
         
-        <div id="resultsContainer" class="search-results">
-            </div>
+        <div id="modalTags" class="tag-container" style="margin-bottom: 15px;"></div>
+        
+        <p id="modalMeaningText" style="line-height: 1.6;"></p>
+
+        <div id="editForm" style="display:none; margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
+            <h3>Edit Entry</h3>
+            <input type="text" id="editSound" placeholder="Sound">
+            <textarea id="editMeaning" rows="4"></textarea>
+            <button onclick="saveEdit()" style="width: 100%;">Save Changes</button>
+            <button onclick="cancelEdit()" style="width: 100%; background: transparent; color: var(--text); border: 1px solid var(--border); margin-top: 10px;">Cancel</button>
+        </div>
+
+        <button id="editBtn" onclick="toggleEditMode()" style="width: 100%; margin-top: 20px;">Edit Word</button>
     </div>
 </div>
 
 <script>
-    // --- CANVAS DRAWING LOGIC ---
+    const API_BASE_URL = "https://conlangback.onrender.com"; 
+
+    // --- UI/THEME STATE ---
+    let currentTheme = 0; // 0=Light, 1=Dark, 2=Darker
+    const themeNames = ['Dark Mode', 'Darker Mode', 'Light Mode'];
+    const themeAttr = ['', 'dark', 'darker'];
+
+    function cycleTheme() {
+        currentTheme = (currentTheme + 1) % 3;
+        if (themeAttr[currentTheme]) {
+            document.documentElement.setAttribute('data-theme', themeAttr[currentTheme]);
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+        }
+        document.getElementById('themeBtn').innerText = themeNames[currentTheme];
+        // Redraw canvas to fix colors on flip if needed (simple hack: clear background to white on save)
+    }
+
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+    }
+
+    function switchView(viewId) {
+        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+        toggleSidebar();
+        if(viewId === 'view-all-words') loadDictionary('az');
+    }
+
+    // --- CANVAS LOGIC ---
     const canvas = document.getElementById('sketchpad');
     const ctx = canvas.getContext('2d');
     let isDrawing = false;
+    ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.strokeStyle = '#000000';
 
-    // Set brush style
-    ctx.lineWidth = 4;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#000000';
-
-    const startDrawing = (e) => {
-        isDrawing = true;
-        draw(e);
-    };
-
-    const stopDrawing = () => {
-        isDrawing = false;
-        ctx.beginPath();
-    };
-
+    const startDrawing = (e) => { isDrawing = true; draw(e); };
+    const stopDrawing = () => { isDrawing = false; ctx.beginPath(); };
     const draw = (e) => {
         if (!isDrawing) return;
-        // Handle both mouse and touch events
         const rect = canvas.getBoundingClientRect();
         const clientX = e.clientX || (e.touches && e.touches[0].clientX);
         const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-        
         ctx.lineTo(clientX - rect.left, clientY - rect.top);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(clientX - rect.left, clientY - rect.top);
+        ctx.stroke(); ctx.beginPath(); ctx.moveTo(clientX - rect.left, clientY - rect.top);
     };
+    canvas.addEventListener('mousedown', startDrawing); canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing); canvas.addEventListener('mouseout', stopDrawing);
+    canvas.addEventListener('touchstart', startDrawing); canvas.addEventListener('touchmove', draw); canvas.addEventListener('touchend', stopDrawing);
 
-    canvas.addEventListener('mousedown', startDrawing);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDrawing);
-    canvas.addEventListener('mouseout', stopDrawing);
+    function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
     
-    // Touch support
-    canvas.addEventListener('touchstart', startDrawing);
-    canvas.addEventListener('touchmove', draw);
-    canvas.addEventListener('touchend', stopDrawing);
-
-    function clearCanvas() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // --- TAG SYSTEM ---
+    let currentTags = [];
+    function addTagUI() {
+        const val = document.getElementById('tagInput').value.trim();
+        if(val && !currentTags.includes(val)) {
+            currentTags.push(val);
+            renderTags();
+        }
+        document.getElementById('tagInput').value = '';
+    }
+    function removeTag(index) {
+        currentTags.splice(index, 1);
+        renderTags();
+    }
+    function renderTags() {
+        const c = document.getElementById('tagDisplay');
+        c.innerHTML = currentTags.map((tag, i) => `<div class="tag">${tag} <button onclick="removeTag(${i})">✕</button></div>`).join('');
     }
 
-    // --- API INTEGRATION LOGIC ---
-    const API_BASE_URL = "https://conlangback.onrender.com"; // e.g., https://my-conlang-api.onrender.com
-
+    // --- API CALLS ---
     async function saveLogograph() {
         const sound = document.getElementById('soundInput').value;
         const meaning = document.getElementById('meaningInput').value;
-        const base64Image = canvas.toDataURL('image/png'); // Digitizes sketch
+        
+        // Ensure background is solid white before saving base64 to avoid transparent dark-mode glitches
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width; tempCanvas.height = canvas.height;
+        const tCtx = tempCanvas.getContext('2d');
+        tCtx.fillStyle = '#ffffff'; tCtx.fillRect(0,0,tempCanvas.width, tempCanvas.height);
+        tCtx.drawImage(canvas, 0, 0);
+        const base64Image = tempCanvas.toDataURL('image/png');
 
-        if (!sound || !meaning) {
-            alert("Please fill out sound and meaning.");
-            return;
-        }
+        if (!sound || !meaning) return alert("Requires sound and meaning.");
 
         try {
-            const response = await fetch(`${API_BASE_URL}/add_word`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    sound: sound,
-                    meaning: meaning,
-                    image: base64Image
-                })
+            const res = await fetch(`${API_BASE_URL}/add_word`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sound, meaning, image: base64Image, markers: currentTags })
             });
-            
-            if (response.ok) {
-                alert("Logograph saved successfully!");
-                clearCanvas();
-                document.getElementById('soundInput').value = '';
-                document.getElementById('meaningInput').value = '';
+            if (res.ok) {
+                alert("Saved!");
+                clearCanvas(); document.getElementById('soundInput').value = ''; document.getElementById('meaningInput').value = '';
+                currentTags = []; renderTags();
             }
-        } catch (error) {
-            console.error("Error saving logograph:", error);
-            alert("Ensure your Render API is running.");
-        }
+        } catch (e) { alert("Error saving."); }
     }
 
     async function performSearch() {
-        const query = document.getElementById('searchInput').value;
-        if (!query) return;
-
-        const resultsContainer = document.getElementById('resultsContainer');
-        resultsContainer.innerHTML = "<p>Searching concepts...</p>";
+        const q = document.getElementById('searchInput').value;
+        const limit = document.getElementById('limitInput').value || 10;
+        if (!q) return;
+        const rc = document.getElementById('resultsContainer');
+        rc.innerHTML = "<p>Searching...</p>";
 
         try {
-            const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}`);
-            const data = await response.json(); // Expected to be an array of top 3 matches
+            const res = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(q)}&limit=${limit}`);
+            const data = await res.json();
+            rc.innerHTML = data.length ? "" : "<p>No matches.</p>";
+            data.forEach(item => rc.appendChild(createResultDiv(item)));
+        } catch (e) { rc.innerHTML = "<p>Search failed.</p>"; }
+    }
+
+    // --- DICTIONARY & SORTING ---
+    let allWordsCache = [];
+    async function loadDictionary(sortType) {
+        const dc = document.getElementById('dictionaryContainer');
+        dc.innerHTML = "<p>Loading...</p>";
+        
+        try {
+            if(allWordsCache.length === 0) {
+                const res = await fetch(`${API_BASE_URL}/words`);
+                allWordsCache = await res.json();
+            }
             
-            resultsContainer.innerHTML = "";
-            data.forEach(item => {
-                const resultDiv = document.createElement('div');
-                resultDiv.className = 'result-item';
-                resultDiv.innerHTML = `
-                    <img src="${item.image}" alt="Logograph for ${item.sound}">
-                    <div>
-                        <strong>[${item.sound}]</strong><br>
-                        <span style="font-size: 0.9em; color: #555;">${item.meaning}</span>
-                        </div>
-                `;
-                resultsContainer.appendChild(resultDiv);
+            let sorted = [...allWordsCache];
+            dc.innerHTML = "";
+
+            if(sortType === 'date-new') {
+                sorted.sort((a,b) => new Date(b.added_date) - new Date(a.added_date));
+                sorted.forEach(item => dc.appendChild(createResultDiv(item)));
+            } else if (sortType === 'date-old') {
+                sorted.sort((a,b) => new Date(a.added_date) - new Date(b.added_date));
+                sorted.forEach(item => dc.appendChild(createResultDiv(item)));
+            } else {
+                // A-Z or Z-A
+                sorted.sort((a,b) => sortType === 'az' ? a.sound.localeCompare(b.sound) : b.sound.localeCompare(a.sound));
+                
+                let currentLetter = '';
+                sorted.forEach(item => {
+                    const firstChar = item.sound.charAt(0).toUpperCase();
+                    if(firstChar !== currentLetter) {
+                        currentLetter = firstChar;
+                        const header = document.createElement('h3');
+                        header.className = 'dict-header';
+                        header.innerText = currentLetter;
+                        dc.appendChild(header);
+                    }
+                    dc.appendChild(createResultDiv(item));
+                });
+            }
+        } catch (e) { dc.innerHTML = "<p>Failed to load.</p>"; }
+    }
+
+    // --- UTILS & MODAL ---
+    function createResultDiv(item) {
+        const div = document.createElement('div');
+        div.className = 'result-item';
+        div.onclick = () => openModal(item);
+        div.innerHTML = `
+            <img src="${item.image}">
+            <div class="result-text">
+                <strong>${item.sound}</strong>
+                <div class="trunc-desc">${item.meaning}</div>
+            </div>
+        `;
+        return div;
+    }
+
+    let currentEditingWord = null;
+
+    function openModal(item) {
+        currentEditingWord = item;
+        document.getElementById('modalImg').src = item.image;
+        document.getElementById('modalSound').innerText = item.sound;
+        document.getElementById('modalMeaningText').innerText = item.meaning;
+        
+        // Format Date nicely
+        const d = new Date(item.added_date);
+        document.getElementById('modalDate').innerText = isNaN(d) ? '' : d.toLocaleDateString();
+
+        const tagsDiv = document.getElementById('modalTags');
+        tagsDiv.innerHTML = (item.markers || []).map(t => `<div class="tag">${t}</div>`).join('');
+        
+        document.getElementById('editForm').style.display = 'none';
+        document.getElementById('modalMeaningText').style.display = 'block';
+        document.getElementById('editBtn').style.display = 'block';
+        
+        document.getElementById('wordModal').style.display = 'flex';
+    }
+
+    function closeModal() { document.getElementById('wordModal').style.display = 'none'; }
+
+    function toggleEditMode() {
+        document.getElementById('editForm').style.display = 'block';
+        document.getElementById('modalMeaningText').style.display = 'none';
+        document.getElementById('editBtn').style.display = 'none';
+        
+        document.getElementById('editSound').value = currentEditingWord.sound;
+        document.getElementById('editMeaning').value = currentEditingWord.meaning;
+    }
+
+    function cancelEdit() {
+        document.getElementById('editForm').style.display = 'none';
+        document.getElementById('modalMeaningText').style.display = 'block';
+        document.getElementById('editBtn').style.display = 'block';
+    }
+
+    async function saveEdit() {
+        const newSound = document.getElementById('editSound').value;
+        const newMeaning = document.getElementById('editMeaning').value;
+        
+        try {
+            const res = await fetch(`${API_BASE_URL}/edit_word/${currentEditingWord.id}`, {
+                method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    sound: newSound, 
+                    meaning: newMeaning, 
+                    image: currentEditingWord.image, 
+                    markers: currentEditingWord.markers || [] 
+                })
             });
-        } catch (error) {
-            console.error("Error searching:", error);
-            resultsContainer.innerHTML = "<p style='color:red;'>Search failed. Check API connection.</p>";
-        }
+            if(res.ok) {
+                alert("Updated!");
+                // Update local cache and close
+                currentEditingWord.sound = newSound;
+                currentEditingWord.meaning = newMeaning;
+                allWordsCache = []; // clear cache so it refetches next time
+                openModal(currentEditingWord); // refresh modal UI
+            }
+        } catch(e) { alert("Update failed."); }
     }
 </script>
 </body>
