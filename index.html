@@ -345,16 +345,23 @@
         const div = document.createElement('div');
         div.className = 'result-item';
         div.onclick = () => openModal(item);
+        
+        // Generate tiny HTML tags for the preview
+        const tagsHtml = (item.markers || []).map(t => 
+            `<span style="display:inline-block; background:var(--border); font-size:0.75em; padding:2px 8px; border-radius:12px; margin-right:5px; margin-bottom:5px;">${t}</span>`
+        ).join('');
+
         div.innerHTML = `
             <img src="${item.image}">
             <div class="result-text">
-                <strong>${item.sound}</strong>
+                <strong style="display:block; margin-bottom:2px;">${item.sound}</strong>
+                <div>${tagsHtml}</div>
                 <div class="trunc-desc">${item.meaning}</div>
             </div>
         `;
         return div;
     }
-
+    
     let currentEditingWord = null;
 
     function openModal(item) {
@@ -363,7 +370,6 @@
         document.getElementById('modalSound').innerText = item.sound;
         document.getElementById('modalMeaningText').innerText = item.meaning;
         
-        // Format Date nicely
         const d = new Date(item.added_date);
         document.getElementById('modalDate').innerText = isNaN(d) ? '' : d.toLocaleDateString();
 
@@ -372,7 +378,7 @@
         
         document.getElementById('editForm').style.display = 'none';
         document.getElementById('modalMeaningText').style.display = 'block';
-        document.getElementById('editBtn').style.display = 'block';
+        document.getElementById('actionBtns').style.display = 'flex'; // <--- UPDATED
         
         document.getElementById('wordModal').style.display = 'flex';
     }
@@ -382,7 +388,7 @@
     function toggleEditMode() {
         document.getElementById('editForm').style.display = 'block';
         document.getElementById('modalMeaningText').style.display = 'none';
-        document.getElementById('editBtn').style.display = 'none';
+        document.getElementById('actionBtns').style.display = 'none'; // <--- UPDATED
         
         document.getElementById('editSound').value = currentEditingWord.sound;
         document.getElementById('editMeaning').value = currentEditingWord.meaning;
@@ -391,9 +397,9 @@
     function cancelEdit() {
         document.getElementById('editForm').style.display = 'none';
         document.getElementById('modalMeaningText').style.display = 'block';
-        document.getElementById('editBtn').style.display = 'block';
+        document.getElementById('actionBtns').style.display = 'flex'; // <--- UPDATED
     }
-
+    
     async function saveEdit() {
         const newSound = document.getElementById('editSound').value;
         const newMeaning = document.getElementById('editMeaning').value;
@@ -417,6 +423,33 @@
                 openModal(currentEditingWord); // refresh modal UI
             }
         } catch(e) { alert("Update failed."); }
+    }
+
+    async function deleteWord() {
+        if(!confirm(`Are you sure you want to permanently delete [${currentEditingWord.sound}]?`)) return;
+        
+        try {
+            const res = await fetch(`${API_BASE_URL}/delete_word/${currentEditingWord.id}`, {
+                method: 'DELETE'
+            });
+            
+            if(res.ok) {
+                alert("Word deleted.");
+                closeModal();
+                
+                // Remove the word from local memory so it disappears instantly
+                allWordsCache = allWordsCache.filter(w => w.id !== currentEditingWord.id);
+                
+                // Refresh the screen you are currently looking at
+                if(document.getElementById('view-all-words').classList.contains('active')) {
+                    loadDictionary('az'); // Refreshes dictionary list
+                } else {
+                    document.getElementById('resultsContainer').innerHTML = ""; // Clears search
+                }
+            }
+        } catch(e) { 
+            alert("Delete failed. Check API connection."); 
+        }
     }
 </script>
 </body>
