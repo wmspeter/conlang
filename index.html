@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logograph Conlang Workspace</title>
+    <style>
+        :root { --primary: #2c3e50; --bg: #ecf0f1; --canvas-bg: #ffffff; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--primary); margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; display: grid; gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        canvas { border: 2px solid #bdc3c7; border-radius: 4px; background: var(--canvas-bg); cursor: crosshair; touch-action: none; }
+        .controls { margin-top: 10px; display: flex; gap: 10px; }
+        input, textarea, button { padding: 10px; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 16px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+        button { background: var(--primary); color: white; cursor: pointer; border: none; font-weight: bold; }
+        button:hover { background: #34495e; }
+        .search-results { margin-top: 20px; display: grid; gap: 10px; }
+        .result-item { display: flex; align-items: center; gap: 15px; padding: 10px; border: 1px solid #eee; border-radius: 4px; }
+        .result-item img { max-width: 60px; max-height: 60px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h2>Add New Logograph</h2>
+        <canvas id="sketchpad" width="200" height="200"></canvas>
+        <div class="controls">
+            <button onclick="clearCanvas()">Clear Canvas</button>
+        </div>
+        
+        <input type="text" id="soundInput" placeholder="Pronunciation / Sound (e.g., 'Ki')">
+        <textarea id="meaningInput" placeholder="Meaning / Semantic Definition (e.g., 'Tree object, uses classifier Bi')" rows="3"></textarea>
+        
+        <button onclick="saveLogograph()">Save to Lexicon</button>
+    </div>
+
+    <div class="card">
+        <h2>Semantic Search</h2>
+        <input type="text" id="searchInput" placeholder="Search by concept (e.g., 'woody plants in a jungle')">
+        <button onclick="performSearch()">Search</button>
+        
+        <div id="resultsContainer" class="search-results">
+            </div>
+    </div>
+</div>
+
+<script>
+    // --- CANVAS DRAWING LOGIC ---
+    const canvas = document.getElementById('sketchpad');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+
+    // Set brush style
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#000000';
+
+    const startDrawing = (e) => {
+        isDrawing = true;
+        draw(e);
+    };
+
+    const stopDrawing = () => {
+        isDrawing = false;
+        ctx.beginPath();
+    };
+
+    const draw = (e) => {
+        if (!isDrawing) return;
+        // Handle both mouse and touch events
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        
+        ctx.lineTo(clientX - rect.left, clientY - rect.top);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(clientX - rect.left, clientY - rect.top);
+    };
+
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+    
+    // Touch support
+    canvas.addEventListener('touchstart', startDrawing);
+    canvas.addEventListener('touchmove', draw);
+    canvas.addEventListener('touchend', stopDrawing);
+
+    function clearCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // --- API INTEGRATION LOGIC ---
+    const API_BASE_URL = "YOUR_RENDER_API_URL_HERE"; // e.g., https://my-conlang-api.onrender.com
+
+    async function saveLogograph() {
+        const sound = document.getElementById('soundInput').value;
+        const meaning = document.getElementById('meaningInput').value;
+        const base64Image = canvas.toDataURL('image/png'); // Digitizes sketch
+
+        if (!sound || !meaning) {
+            alert("Please fill out sound and meaning.");
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/add_word`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sound: sound,
+                    meaning: meaning,
+                    image: base64Image
+                })
+            });
+            
+            if (response.ok) {
+                alert("Logograph saved successfully!");
+                clearCanvas();
+                document.getElementById('soundInput').value = '';
+                document.getElementById('meaningInput').value = '';
+            }
+        } catch (error) {
+            console.error("Error saving logograph:", error);
+            alert("Ensure your Render API is running.");
+        }
+    }
+
+    async function performSearch() {
+        const query = document.getElementById('searchInput').value;
+        if (!query) return;
+
+        const resultsContainer = document.getElementById('resultsContainer');
+        resultsContainer.innerHTML = "<p>Searching concepts...</p>";
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}`);
+            const data = await response.json(); // Expected to be an array of top 3 matches
+            
+            resultsContainer.innerHTML = "";
+            data.forEach(item => {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'result-item';
+                resultDiv.innerHTML = `
+                    <img src="${item.image}" alt="Logograph for ${item.sound}">
+                    <div>
+                        <strong>[${item.sound}]</strong><br>
+                        <span style="font-size: 0.9em; color: #555;">${item.meaning}</span>
+                        </div>
+                `;
+                resultsContainer.appendChild(resultDiv);
+            });
+        } catch (error) {
+            console.error("Error searching:", error);
+            resultsContainer.innerHTML = "<p style='color:red;'>Search failed. Check API connection.</p>";
+        }
+    }
+</script>
+</body>
+</html>
