@@ -100,23 +100,30 @@
 </div>
 
 <div class="container view-section active" id="view-save-search">
-    <div class="card">
-        <h2>Add New Logograph</h2>
-        <canvas id="sketchpad" width="200" height="200"></canvas>
-        <div style="margin: 10px 0;">
-            <button onclick="clearCanvas()">Clear</button>
+   <div class="card">
+        <h2 style="margin-top: 0;">Add New Logograph</h2>
+        
+        <div style="text-align: center;">
+            <canvas id="sketchpad" width="200" height="200"></canvas>
+            <div style="margin: 10px 0 20px 0;">
+                <button onclick="clearCanvas()" style="width: 200px; background: transparent; color: var(--text); border: 1px solid var(--border);">Clear Canvas</button>
+            </div>
         </div>
         
-        <input type="text" id="soundInput" placeholder="Pronunciation / Sound (e.g., 'Ki')">
-        <textarea id="meaningInput" placeholder="Meaning / Semantic Definition" rows="3"></textarea>
+        <label style="font-size: 0.85em; opacity: 0.8; margin-bottom: 5px; display: block;">Sound / Pronunciation</label>
+        <input type="text" id="soundInput" placeholder="e.g., 'Ki'" style="width: 100%; margin-bottom: 15px; display: block;">
         
+        <label style="font-size: 0.85em; opacity: 0.8; margin-bottom: 5px; display: block;">Meaning / Semantic Definition</label>
+        <textarea id="meaningInput" placeholder="e.g., 'Tree object, uses classifier Bi'" rows="4" style="width: 100%; margin-bottom: 15px; display: block; resize: vertical; overflow-y: auto; line-height: 1.5;"></textarea>
+        
+        <label style="font-size: 0.85em; opacity: 0.8; margin-bottom: 5px; display: block;">Grammar Markers / Tags (Optional)</label>
         <div class="search-row">
-            <input type="text" id="tagInput" placeholder="New tag (e.g., Noun)">
-            <button onclick="addTagUI()" style="width: auto;">Add Tag</button>
+            <input type="text" id="tagInput" placeholder="e.g., Noun Classifier">
+            <button onclick="addTagUI()" style="width: auto; padding: 10px 20px;">Add Tag</button>
         </div>
         <div id="tagDisplay" class="tag-container"></div>
         
-        <button style="width: 100%; margin-top: 10px;" onclick="saveLogograph()">Save to Lexicon</button>
+        <button style="width: 100%; margin-top: 20px; padding: 12px; font-size: 1.1em;" onclick="saveLogograph()">Save to Lexicon</button>
     </div>
 
     <div class="card">
